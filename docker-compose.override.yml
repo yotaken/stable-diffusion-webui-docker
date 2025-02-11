@@ -1,0 +1,5 @@
+services:
+  comfy:
+    volumes:
+      - ./data/models:/stable-diffusion/models
+      - ./data/models/CLIPEncoder:/stable-diffusion/models/text_encoders
