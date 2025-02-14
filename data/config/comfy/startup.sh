@@ -42,4 +42,4 @@ else
     echo "ComfyUI-Manager ya está instalado. Omitiendo clonación e instalación."
 fi
 
-pip install piexif deepdiff evalidate tables pynvml imageio_ffmpeg matplotlib scikit-image gguf pymunk librosa pygame mido pyhocon
+pip install piexif deepdiff evalidate tables pynvml imageio_ffmpeg matplotlib scikit-image gguf pymunk librosa pygame mido pyhocon segment_anything insightface

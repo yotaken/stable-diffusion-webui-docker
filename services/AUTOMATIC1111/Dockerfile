@@ -17,6 +17,8 @@ RUN . /clone.sh stable-diffusion-webui-assets https://github.com/AUTOMATIC1111/s
 FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
 
 ENV DEBIAN_FRONTEND=noninteractive PIP_PREFER_BINARY=1
+ENV CUDA_HOME=/usr/local/cuda
+
 
 RUN --mount=type=cache,target=/var/cache/apt \
   apt-get update && \

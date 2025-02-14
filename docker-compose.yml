@@ -10,9 +10,10 @@ x-base_service: &base_service
       resources:
         reservations:
           devices:
-              - driver: nvidia
-                device_ids: ['0']
-                capabilities: [compute, utility]
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
 
 name: webui-docker
 
