@@ -1,5 +1,9 @@
 services:
   auto:
+    environment:
+      - TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=true
+#      - xformers-0.0.31+da84ce3.d20250603
+      - CLI_ARGS=--always-gpu --allow-code --pin-shared-memory --cuda-malloc --cuda-stream --xformers --force-enable-xformers --enable-insecure-extension-access --api
     deploy:
       resources:
         reservations:

@@ -14,7 +14,7 @@ RUN . /clone.sh generative-models https://github.com/Stability-AI/generative-mod
 RUN . /clone.sh stable-diffusion-webui-assets https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets 6f7db241d2f8ba7457bac5ca9753331f0c266917
 
 
-FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
+FROM pytorch/pytorch:2.7.0-cuda12.8-cudnn9-devel
 
 ENV DEBIAN_FRONTEND=noninteractive PIP_PREFER_BINARY=1
 ENV CUDA_HOME=/usr/local/cuda
@@ -25,25 +25,31 @@ RUN --mount=type=cache,target=/var/cache/apt \
   # we need those
   apt-get install -y fonts-dejavu-core rsync git jq moreutils aria2 \
   # extensions needs those
-  ffmpeg libglfw3-dev libgles2-mesa-dev pkg-config libcairo2 libcairo2-dev build-essential
+  ffmpeg libglfw3-dev libgles2-mesa-dev pkg-config libcairo2 libcairo2-dev build-essential cmake ninja-build libgoogle-perftools-dev \
+  && apt-get clean  \
+  && rm -rf /var/lib/apt/lists/*
 
 
 WORKDIR /
 RUN --mount=type=cache,target=/root/.cache/pip \
-  git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git && \
-  cd stable-diffusion-webui && \
-  git reset --hard v1.9.4 && \
+  git clone https://github.com/Panchovix/stable-diffusion-webui-reForge && \
+  cd stable-diffusion-webui-reForge && \
+  git checkout main && \
   pip install -r requirements_versions.txt && \
   pip install --upgrade typing-extensions
 
 
-ENV ROOT=/stable-diffusion-webui
+ENV ROOT=/stable-diffusion-webui-reForge
 
 COPY --from=download /repositories/ ${ROOT}/repositories/
 RUN mkdir ${ROOT}/interrogate && cp ${ROOT}/repositories/clip-interrogator/clip_interrogator/data/* ${ROOT}/interrogate
 
+#Ensure RTX 5XXX CUDA
 RUN --mount=type=cache,target=/root/.cache/pip \
-  pip install pyngrok xformers==0.0.26.post1 \
+    pip install -U --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+  pip install pyngrok  \
   git+https://github.com/TencentARC/GFPGAN.git@8d2447a2d918f8eba5a4a01463fd48e45126a379 \
   git+https://github.com/openai/CLIP.git@d50d76daa670286dd6cacf3bcd80b5e4823fc8e1 \
   git+https://github.com/mlfoundations/open_clip.git@v2.20.0
@@ -58,8 +64,20 @@ COPY . /docker
 RUN \
   # mv ${ROOT}/style.css ${ROOT}/user.css && \
   # one of the ugliest hacks I ever wrote \
-  sed -i 's/in_app_dir = .*/in_app_dir = True/g' /opt/conda/lib/python3.10/site-packages/gradio/routes.py && \
+  sed -i 's/in_app_dir = .*/in_app_dir = True/g' \
+  $(find /opt/conda/lib/ -path "*/site-packages/gradio/routes.py") && \
   git config --global --add safe.directory '*'
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip setuptools wheel
+
+ENV TORCH_CUDA_ARCH_LIST="8.9;12.0"
+ENV MAX_JOBS=4
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -v -U git+https://github.com/facebookresearch/xformers.git@main#egg=xformers
+
+RUN conda install libsqlite=3.48.0
 
 WORKDIR ${ROOT}
 ENV NVIDIA_VISIBLE_DEVICES=all
@@ -67,3 +85,12 @@ ENV CLI_ARGS=""
 EXPOSE 7860
 ENTRYPOINT ["/docker/entrypoint.sh"]
 CMD python -u webui.py --listen --port 7860 ${CLI_ARGS}
+
+#PARA RTX 5060
+# pip install unsloth
+# pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+#   conda install libsqlite=3.48.0
+#set COMMANDLINE_ARGS=--force-enable-xformers --xformers
+#set XFORMERS_PACKAGE=xformers==0.0.30.dev1005
+# pip install -U xformers --index-url https://download.pytorch.org/whl/cu128
+# python -m xformers.info
